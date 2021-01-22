@@ -533,6 +533,17 @@ class RaftServiceCLI():
                 'https://login.microsoftonline.com'
                 '/common/oauth2/nativeclient')
 
+            manifest_path = os.path.join(script_dir, 'manifest.json')
+            manifest = open(manifest_path, 'w')
+            manifest.write('[{\n')
+            manifest.write('\t"allowedMemberTypes": ["User"],\n')
+            manifest.write('\t"description": "Can run the application",\n')
+            manifest.write('\t"displayName": "User",\n')
+            manifest.write('\t"isEnabled": "true",\n')
+            manifest.write('\t"value": "user"\n')
+            manifest.write('}]\n')
+            manifest.close()
+
             while(True):
                 try:
                     app = az_json(
@@ -540,12 +551,16 @@ class RaftServiceCLI():
                         f' --display-name "{name}"'
                         ' --native-app true --reply-urls'
                         f' "{login_url}"'
-                        ' "http://localhost"')
+                        ' "http://localhost"'
+                        f' --app-roles @{manifest_path}')
+
                     break
                 except RaftAzCliException as ex:
                     print(f"Got: {ex.error_message}")
                     print("Trying again...")
                     time.sleep(3.0)
+
+            os.remove(manifest_path)
 
             while not existing_sp:
                 print('    waiting for app registration to appear'
@@ -570,7 +585,19 @@ class RaftServiceCLI():
         for assign in assign_roles:
             assign(app_id)
 
-        az(f'ad sp update --id {app_id} --set appRoleAssignmentRequired=false')
+        if ((self.context['restrictedAccess'] is not None) and
+           self.context['restrictedAccess']):
+            az(f'ad sp update --id {app_id} '
+               f'--set appRoleAssignmentRequired=true')
+            try:
+                az(f'ad sp update --id {app_id} '
+                   f'--add tags WindowsAzureActiveDirectoryIntegratedApp')
+            except RaftApiException:
+                pass
+        else:
+            az(f'ad sp update --id {app_id} '
+               f'--set appRoleAssignmentRequired=false')
+
         sp = az_json(f'ad sp credential reset --append --name {app_id}')
 
         # Add command will write an informational message to stderr.
@@ -583,13 +610,18 @@ class RaftServiceCLI():
                       f' --id {app_id}'
                       f' --api-permissions "{user_read_permission}=Scope"')
         except RaftAzCliException as ex:
-            if ex.error_message.startswith(
-                                    'Invoking "az ad app permission grant'
-                                    f' --id {app_id}'
-                                    ' --api'
-                                    ' 00000003-0000-0000-c000-000000000000"'
-                                    ' is needed to make the change effective'):
-
+            if (ex.error_message.startswith(
+                    'Invoking "az ad app permission grant'
+                    f' --id {app_id}'
+                    ' --api'
+                    ' 00000003-0000-0000-c000-000000000000"'
+                    ' is needed to make the change effective') or
+               ex.error_message.startswith(
+                    'WARNING: Invoking "az ad app permission grant'
+                    f' --id {app_id}'
+                    ' --api'
+                    ' 00000003-0000-0000-c000-000000000000"'
+                    ' is needed to make the change effective')):
                 pass
             else:
                 raise ex

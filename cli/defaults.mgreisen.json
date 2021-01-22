@@ -1,0 +1,12 @@
+{
+  "subscription": "da3e8787-6e2b-4cae-b201-6e4cd71be189",
+  "deploymentName": "mgreisen",
+  "region": "westus2",
+  "isDevelop": true,
+  "isPrivateRegistry": true,
+  "registry": "acrmgreisen.azurecr.io",
+  "clientId": "6fe4b557-7c83-40a2-b3b3-ce29ba9ad6d3",
+  "tenantId": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+  "metricsOptIn": false,
+  "useAppInsights": true
+}

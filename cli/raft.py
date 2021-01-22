@@ -18,6 +18,7 @@ fresh_defaults = json.dumps(
         "deploymentName": "",
         "region": "",
         "metricsOptIn": True,
+        "restrictedAccess": False,
         "useAppInsights": True,
         "registry": "mcr.microsoft.com"
     }, indent=4)
@@ -40,6 +41,8 @@ region - Region to deploy RAFT (e.g. westus2)
     region as your service deployment
 
 metricsOptIn - allow Microsoft collect anonymized metrics from the deployment.
+
+restrictedAccess - restrict access to the service to a specific set of users
 
 useAppInsights - deploy AppInsights and use it to write all service logs
 
